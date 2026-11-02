@@ -82,6 +82,25 @@ class MultiChannelAutoCrawler:
                                          "user": a["user"], "password": a["password"].replace(" ", ""), "enabled": True})
         except Exception:
             pass
+        # ~/Desktop/.env 의 JEV_* 변수 (Gmail / Naver / 기타)
+        env = {}
+        try:
+            with open(os.path.expanduser("~/Desktop/.env"), "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        env[k.strip()] = v.strip().strip('"').strip("'")
+        except Exception:
+            pass
+        presets = [("GMAIL", "imap.gmail.com"), ("NAVER", "imap.naver.com"),
+                   ("OTHER1", None), ("OTHER2", None)]
+        for key, default_host in presets:
+            user, pw = env.get(f"JEV_{key}_USER"), env.get(f"JEV_{key}_PW")
+            host = env.get(f"JEV_{key}_HOST") or default_host
+            if user and pw and host and not any(a["user"] == user for a in accounts):
+                accounts.append({"host": host, "port": int(env.get(f"JEV_{key}_PORT", 993)),
+                                 "user": user, "password": pw.replace(" ", ""), "enabled": True})
         return accounts
 
     def crawl_all_imap_accounts(self, limit: int = 15) -> List[Dict[str, Any]]:
