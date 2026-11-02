@@ -856,7 +856,7 @@ nav.bottom-nav {
         </div>
 
         <div class="file-dropzone" onclick="document.getElementById('fileUploadInput').click()">
-          <div style="font-size:13px; font-weight:600;">📂 카카오톡 내보내기 텍스트 파일 (.txt) 통째로 크롤링</div>
+          <div style="font-size:13px; font-weight:600;">📂 텍스트 파일 (.txt) 불러오기</div>
           <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">단톡방 수천 줄 대화 파일을 올리면 자동으로 전체 발언을 스캔하여 중요 발언만 추출합니다</div>
           <input type="file" id="fileUploadInput" accept=".txt,.csv" style="display:none;" onchange="handleFileUpload(event)">
         </div>
@@ -868,7 +868,7 @@ nav.bottom-nav {
 
         <div class="input-group">
           <label class="input-label">메시지 본문 내용</label>
-          <textarea id="bodyInput" placeholder="문자 메시지나 카카오톡 대화 내용, 이메일 본문을 붙여넣으세요..."></textarea>
+          <textarea id="bodyInput" placeholder="문자 메시지나 이메일 본문을 붙여넣으세요..."></textarea>
         </div>
 
         <div class="actions-row">
@@ -1722,7 +1722,7 @@ async function pasteAndSummarizeFromClipboard() {
     const msg = {
       id: 'clip_' + Date.now(),
       channel: ch,
-      sender: ch === 'sms' ? '복사된 문자' : ch === 'email' ? '복사된 이메일' : '복사된 카카오톡',
+      sender: ch === 'sms' ? '복사된 문자' : ch === 'email' ? '복사된 이메일' : '복사된 문자',
       body: text,
       timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
     };
@@ -1777,7 +1777,7 @@ function checkIncomingUrlParams() {
   if (body && body.trim()) {
     const rawChannel = (params.get('channel') || '').toLowerCase();
     const channel = ['sms', 'email'].includes(rawChannel) ? rawChannel : detectChannelFromText(body);
-    const sender = params.get('sender') || params.get('title') || (channel === 'sms' ? '수신 문자' : channel === 'email' ? '수신 이메일' : '카카오톡');
+    const sender = params.get('sender') || params.get('title') || (channel === 'sms' ? '수신 문자' : channel === 'email' ? '수신 이메일' : '수신 문자');
     const msg = {
       id: 'incoming_' + Date.now(),
       channel,
