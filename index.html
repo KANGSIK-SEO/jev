@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JEV 요약">
 <meta name="theme-color" content="#121620">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <title>JEV (Just Essential View) | Wirelog 중요 문자·카톡·이메일 1줄 요약 비서 (Google Cloud & On-Device)</title>
 <style>
 :root {
@@ -722,6 +726,16 @@ nav.bottom-nav {
 
   <!-- [탭 1] 중요 요약 피드 (기본) -->
   <section id="tabFeed" class="tab-pane active">
+    <!-- 스마트폰 원터치 액션 바 -->
+    <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:8px; margin-bottom:12px;">
+      <button class="btn btn-primary" style="padding:10px 12px; font-size:13px;" onclick="pasteAndSummarizeFromClipboard()">
+        📋 복사한 문자·카톡·메일 즉시 요약
+      </button>
+      <button class="btn btn-outline" style="padding:10px 10px; font-size:12px; border-color:#8957e5; color:#d2a8ff;" onclick="openPhoneInstallModal()">
+        📲 내 폰 설치·자동연동
+      </button>
+    </div>
+
     <!-- 필터 칩 -->
     <div class="filter-scroll">
       <div class="filter-chip active" data-filter="all" onclick="applyFeedFilter('all')">전체보기 (<span id="countAll">0</span>)</div>
@@ -1481,6 +1495,7 @@ function copySummary(text) {
 
 function deleteMessage(id) {
   allEvaluatedMessages = allEvaluatedMessages.filter(m => m.id !== id);
+  saveMessagesToLocal();
   updateDashboard();
   renderFeed();
   showToast('✅ 처리 완료되었습니다.');
@@ -1595,6 +1610,7 @@ function clearAllData() {
   if (confirm('모든 팩트와 추론 내역을 초기화하시겠습니까?')) {
     allEvaluatedMessages = [];
     wirelog.proofs = {};
+    localStorage.removeItem(STORAGE_KEY);
     updateDashboard();
     renderFeed();
     showToast('🗑️ 모든 팩트가 초기화되었습니다.');
@@ -1617,8 +1633,133 @@ function escapeJs(str) {
   return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, ' ');
 }
 
+const STORAGE_KEY = 'jev_saved_raw_messages_v2';
+
+function saveMessagesToLocal() {
+  try {
+    const rawList = allEvaluatedMessages.map(m => ({
+      id: m.id,
+      channel: m.channel,
+      sender: m.sender,
+      body: m.body,
+      timestamp: m.timestamp
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(rawList));
+  } catch (e) {}
+}
+
+function detectChannelFromText(text) {
+  if (/\[웹발신\]|\[.*은행\]|\[.*카드\]|인증번호|무료수신거부|배달|택배/i.test(text)) return 'sms';
+  if (/결재|품의|수신:|발신:|메일|회신|첨부|Subject:|Dear |안녕하세요.*드림/i.test(text)) return 'email';
+  return 'kakao';
+}
+
+async function pasteAndSummarizeFromClipboard() {
+  try {
+    const text = (await navigator.clipboard.readText()).trim();
+    if (!text) {
+      showToast('클립보드가 비어 있습니다. 문자·카톡·메일을 먼저 복사해 주세요.');
+      return;
+    }
+    const ch = detectChannelFromText(text);
+    const msg = {
+      id: 'clip_' + Date.now(),
+      channel: ch,
+      sender: ch === 'sms' ? '복사된 문자' : ch === 'email' ? '복사된 이메일' : '복사된 카카오톡',
+      body: text,
+      timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    };
+    const res = wirelog.insertMessage(msg);
+    allEvaluatedMessages.unshift(res);
+    saveMessagesToLocal();
+    updateDashboard();
+    renderFeed();
+    showToast(`✨ 클립보드 1줄 요약 완료: ${res.summary}`);
+  } catch (err) {
+    switchTab('tabInput');
+    showToast('입력창에 붙여넣기(길게 눌러 붙여넣기) 해주세요.');
+  }
+}
+
+function openPhoneInstallModal() {
+  const modalBody = document.getElementById('proofModalBody');
+  const shortcutUrl = 'https://kangsik-seo.github.io/jev/?channel=sms&sender=[보낸사람]&body=[메시지본문]';
+  modalBody.innerHTML = `
+    <div class="trace-step">
+      <div class="trace-step-title idb">1. 아이폰 / 갤럭시 홈 화면에 JEV 앱 설치하기</div>
+      <div style="font-size:12.5px; line-height:1.6; color:#c9d1d9;">
+        • <b>아이폰(Safari):</b> 하단 가운데 <b>[공유 ⬆️]</b> 버튼 터치 → 아래로 내려서 <b>[홈 화면에 추가]</b> 터치 → 바탕화면에 <b>JEV 요약</b> 앱 아이콘 생성 완료!<br>
+        • <b>갤럭시(Chrome):</b> 우측 상단 <b>[⋮ 메뉴]</b> → <b>[홈 화면에 추가 / 앱 설치]</b> 터치
+      </div>
+    </div>
+    <div class="trace-step">
+      <div class="trace-step-title edb">2. 복사한 카톡 · 문자 · 메일 1초 요약 (가장 간편)</div>
+      <div style="font-size:12.5px; line-height:1.6; color:#c9d1d9;">
+        • 카카오톡 대화방이나 문자, 메일에서 내용을 <b>복사</b>한 뒤 JEV 앱 상단의 <b>[📋 복사한 문자·카톡·메일 즉시 요약]</b> 버튼만 누르면 자동으로 채널을 판별해 1줄 요약해 줍니다.
+      </div>
+    </div>
+    <div class="trace-step">
+      <div class="trace-step-title rule">3. 아이폰 [단축어]로 실제 문자·메일 자동 수신 연동</div>
+      <div style="font-size:12.5px; line-height:1.6; color:#c9d1d9;">
+        1) 아이폰 기본 <b>[단축어(Shortcuts)]</b> 앱 실행 → 하단 <b>[자동화]</b> 탭 → <b>[+]</b> 터치<br>
+        2) <b>[메시지]</b> 또는 <b>[이메일]</b> 선택 → <b>"즉시 실행"</b> 체크 후 다음<br>
+        3) <b>[URL 열기]</b> 동작을 추가하고 아래 주소를 붙여넣으면 문자/메일 수신 즉시 JEV가 자동 요약합니다.
+      </div>
+      <div class="code-block" style="margin-top:8px; font-size:11px;">${escapeHtml(shortcutUrl)}</div>
+      <button class="btn btn-outline" style="margin-top:8px; width:100%; padding:8px;" onclick="copySummary('https://kangsik-seo.github.io/jev/?channel=sms&sender=문자알림&body=')">
+        🔗 단축어 연동용 URL 복사하기
+      </button>
+    </div>
+  `;
+  document.getElementById('proofModal').classList.add('open');
+}
+
+function checkIncomingUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  const body = params.get('body') || params.get('text');
+  if (body && body.trim()) {
+    const rawChannel = (params.get('channel') || '').toLowerCase();
+    const channel = ['sms', 'kakao', 'email'].includes(rawChannel) ? rawChannel : detectChannelFromText(body);
+    const sender = params.get('sender') || params.get('title') || (channel === 'sms' ? '수신 문자' : channel === 'email' ? '수신 이메일' : '카카오톡');
+    const msg = {
+      id: 'incoming_' + Date.now(),
+      channel,
+      sender,
+      body: body.trim(),
+      timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    };
+    const res = wirelog.insertMessage(msg);
+    allEvaluatedMessages.unshift(res);
+    saveMessagesToLocal();
+    updateDashboard();
+    renderFeed();
+    window.history.replaceState({}, document.title, window.location.pathname);
+    showToast(`📲 새 ${channel === 'sms' ? '문자' : channel === 'email' ? '이메일' : '카톡'} 자동 1줄 요약 완료!`);
+  }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
-  loadDemoDataset();
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        allEvaluatedMessages = parsed.map(msg => wirelog.insertMessage(msg));
+        updateDashboard();
+        renderFeed();
+      } else {
+        loadDemoDataset();
+      }
+    } else {
+      loadDemoDataset();
+    }
+  } catch (e) {
+    loadDemoDataset();
+  }
+  checkIncomingUrlParams();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
 });
 </script>
 </body>
