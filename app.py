@@ -7,15 +7,25 @@ Open: http://localhost:8000
 import os
 import json
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List
 
 from models import MessageItem, TriageResult, IntelligenceBriefing
 from service import LocalIntelligenceService
+from crawler import MultiChannelAutoCrawler
 
-app = FastAPI(title="Apple Intelligence Offline Service")
+app = FastAPI(title="JEV × Wirelog Auto-Sensing & Local Intelligence Service")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 service = LocalIntelligenceService()
+crawler = MultiChannelAutoCrawler()
 
 # In-memory message store initialized with sample data
 SAMPLE_PATH = os.path.join(os.path.dirname(__file__), "sample_messages.json")
@@ -28,6 +38,73 @@ class NewMessageRequest(BaseModel):
     sender: str
     content: str
     subject: Optional[str] = None
+
+class ImapConfigRequest(BaseModel):
+    host: str = "imap.gmail.com"
+    port: int = 993
+    user: str
+    password: str
+
+@app.get("/api/sensor/crawl")
+def trigger_auto_crawl():
+    """문자(chat.db), 이메일(IMAP), 카카오톡 폴더를 자동 센싱·크롤링하여 중요도 선별 결과 반환"""
+    newly_sensed = crawler.sense_all_channels()
+    added_items = []
+    for raw in newly_sensed:
+        msg = MessageItem(
+            id=raw["id"],
+            source=raw["source"],
+            sender=raw["sender"],
+            timestamp=raw["timestamp"],
+            subject=raw.get("subject"),
+            content=raw["content"],
+        )
+        current_messages.insert(0, msg)
+        triage = service.triage_message(msg)
+        added_items.append({
+            "raw": raw,
+            "triage": triage.to_dict(),
+        })
+    return {
+        "status": "ok",
+        "newly_sensed_count": len(added_items),
+        "stats": crawler.stats,
+        "items": added_items,
+    }
+
+@app.post("/api/sensor/config/imap")
+def configure_imap_sensor(cfg: ImapConfigRequest):
+    crawler.imap_config = {
+        "host": cfg.host,
+        "port": cfg.port,
+        "user": cfg.user,
+        "password": cfg.password,
+        "enabled": bool(cfg.user and cfg.password),
+    }
+    return {"status": "configured", "host": cfg.host, "user": cfg.user}
+
+@app.post("/api/sensor/webhook")
+def receive_mobile_webhook(req: NewMessageRequest):
+    """아이폰 단축어(Shortcuts) 자동화 또는 안드로이드 NotificationListenerService에서 무인 전송"""
+    new_id = f"hook-{len(current_messages) + 1:04d}"
+    msg = MessageItem(
+        id=new_id,
+        source=req.source,
+        sender=req.sender,
+        timestamp="방금 전",
+        subject=req.subject,
+        content=req.content,
+    )
+    current_messages.insert(0, msg)
+    triage = service.triage_message(msg)
+    crawler.stats["total_sensed"] += 1
+    return {"message": msg.to_dict(), "triage": triage.to_dict()}
+
+@app.get("/jev", response_class=HTMLResponse)
+def jev_pwa_page():
+    index_path = os.path.join(os.path.dirname(__file__), "index.html")
+    with open(index_path, "r", encoding="utf-8") as f:
+        return f.read()
 
 @app.get("/api/status")
 def get_status():
