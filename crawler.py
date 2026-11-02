@@ -197,7 +197,54 @@ class MultiChannelAutoCrawler:
         return results
 
     # ------------------------------------------------------------------
-    # 3. 카카오톡 대화 파일 / 알림 폴더 자동 크롤링
+    # 3. 로컬 Apple Mail (~/Library/Mail/*.emlx) 실시간 자동 크롤러
+    # ------------------------------------------------------------------
+    def crawl_apple_mail_emlx(self, limit: int = 20) -> List[Dict[str, Any]]:
+        mail_root = os.path.expanduser("~/Library/Mail")
+        if not os.path.exists(mail_root):
+            return []
+
+        results = []
+        try:
+            emlx_files = glob.glob(os.path.join(mail_root, "**/*.emlx"), recursive=True)
+            emlx_files.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+            for fpath in emlx_files[:limit]:
+                uid = f"emlx_{os.path.basename(fpath)}_{int(os.path.getmtime(fpath))}"
+                if uid in self.seen_ids:
+                    continue
+                self.seen_ids.add(uid)
+                try:
+                    with open(fpath, "rb") as f:
+                        raw_bytes = f.read()
+                    nl_idx = raw_bytes.find(b"\n")
+                    rfc_bytes = raw_bytes[nl_idx + 1:] if nl_idx != -1 else raw_bytes
+                    msg = email.message_from_bytes(rfc_bytes)
+                    subject = self._decode_mime_words(msg.get("Subject", "(제목 없음)")).strip()
+                    sender = self._decode_mime_words(msg.get("From", "이메일 발신자")).strip()
+                    body = self._extract_email_body(msg)
+                    full_text = f"{subject}\n{body}".strip() if body else subject
+                    if not full_text:
+                        continue
+                    self.stats["total_sensed"] += 1
+                    self.stats["email_sensed"] += 1
+                    mtime_str = datetime.fromtimestamp(os.path.getmtime(fpath)).strftime("%m/%d %H:%M")
+                    results.append({
+                        "id": uid,
+                        "source": "이메일",
+                        "channel": "email",
+                        "sender": sender[:45],
+                        "subject": subject[:80],
+                        "content": full_text[:500],
+                        "timestamp": mtime_str,
+                    })
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        return results
+
+    # ------------------------------------------------------------------
+    # 4. 카카오톡 대화 파일 / 알림 폴더 자동 크롤링
     # ------------------------------------------------------------------
     def crawl_watched_kakao_files(self, max_lines_per_file: int = 40) -> List[Dict[str, Any]]:
         results = []
@@ -240,11 +287,12 @@ class MultiChannelAutoCrawler:
         return results
 
     # ------------------------------------------------------------------
-    # 4. 통합 자동 센싱 1회 실행
+    # 5. 통합 자동 센싱 1회 실행
     # ------------------------------------------------------------------
     def sense_all_channels(self) -> List[Dict[str, Any]]:
         collected = []
         collected.extend(self.crawl_macos_messages_db())
+        collected.extend(self.crawl_apple_mail_emlx())
         collected.extend(self.crawl_imap_emails())
         collected.extend(self.crawl_watched_kakao_files())
         self.stats["last_crawl_at"] = datetime.now().strftime("%H:%M:%S")
