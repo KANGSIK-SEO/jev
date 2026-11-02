@@ -67,6 +67,32 @@ class MultiChannelAutoCrawler:
     # ------------------------------------------------------------------
     # 1. 이메일(Email) IMAP 실시간 크롤러 (Gmail / Naver / iCloud 등)
     # ------------------------------------------------------------------
+    # 다중 IMAP 계정: ~/.jev/email_accounts.json (Git에 올라가지 않는 로컬 파일)
+    ACCOUNTS_PATH = os.path.expanduser("~/.jev/email_accounts.json")
+
+    def load_imap_accounts(self) -> List[Dict[str, Any]]:
+        accounts = []
+        if self.imap_config.get("enabled"):
+            accounts.append(dict(self.imap_config))
+        try:
+            with open(self.ACCOUNTS_PATH, "r", encoding="utf-8") as f:
+                for a in json.load(f):
+                    if a.get("user") and a.get("password"):
+                        accounts.append({"host": a.get("host", "imap.gmail.com"), "port": int(a.get("port", 993)),
+                                         "user": a["user"], "password": a["password"].replace(" ", ""), "enabled": True})
+        except Exception:
+            pass
+        return accounts
+
+    def crawl_all_imap_accounts(self, limit: int = 15) -> List[Dict[str, Any]]:
+        results = []
+        original = self.imap_config
+        for acc in self.load_imap_accounts():
+            self.imap_config = acc
+            results.extend(self.crawl_imap_emails(limit))
+        self.imap_config = original
+        return results
+
     def crawl_imap_emails(self, limit: int = 15) -> List[Dict[str, Any]]:
         if not self.imap_config.get("enabled"):
             return []
@@ -83,7 +109,7 @@ class MultiChannelAutoCrawler:
 
             mail_ids = data[0].split()[-limit:]
             for m_id in reversed(mail_ids):
-                uid = f"imap_{self.imap_config['host']}_{m_id.decode()}"
+                uid = f"imap_{self.imap_config['user']}_{m_id.decode()}"
                 if uid in self.seen_ids:
                     continue
 
@@ -107,6 +133,7 @@ class MultiChannelAutoCrawler:
                             "source": "이메일",
                             "channel": "email",
                             "sender": sender[:40],
+                            "account": self.imap_config["user"],
                             "subject": subject,
                             "content": full_text[:500],
                             "timestamp": datetime.now().strftime("%H:%M"),
@@ -294,7 +321,7 @@ class MultiChannelAutoCrawler:
         collected = []
         collected.extend(self.crawl_macos_messages_db())
         collected.extend(self.crawl_apple_mail_emlx())
-        collected.extend(self.crawl_imap_emails())
+        collected.extend(self.crawl_all_imap_accounts())
         if collected:
             self.recent_items = (collected + self.recent_items)[:100]
         self.stats["last_crawl_at"] = datetime.now().strftime("%H:%M:%S")
