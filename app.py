@@ -31,7 +31,7 @@ crawler = MultiChannelAutoCrawler()
 SAMPLE_PATH = os.path.join(os.path.dirname(__file__), "sample_messages.json")
 with open(SAMPLE_PATH, "r", encoding="utf-8") as f:
     initial_data = json.load(f)
-current_messages = [MessageItem(**item) for item in initial_data]
+current_messages = []  # 더미 샘플 미사용 — 실제 크롤링 데이터만
 
 class NewMessageRequest(BaseModel):
     source: str
