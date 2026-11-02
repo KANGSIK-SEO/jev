@@ -1,0 +1,66 @@
+[
+  {
+    "id": "msg-001",
+    "source": "SMS",
+    "sender": "1588-1688 (KB국민카드)",
+    "timestamp": "13:20",
+    "subject": null,
+    "content": "[KB국민카드] 10/27 13:19 8249** 해외승인 USD 489.00 (AMAZON US) 정상승인. 본인사용 아닐 시 즉시 고객센터 1588-1688 문의"
+  },
+  {
+    "id": "msg-002",
+    "source": "KAKAOTALK",
+    "sender": "김민수 팀장",
+    "timestamp": "13:25",
+    "subject": null,
+    "content": "강식님, 오늘 오후 3시 임원 보고자료에서 4분기 예산 수치 수정한 것 2시 30분까지 메일로 공유 부탁드립니다. 발표 순서가 조금 앞당겨졌어요!"
+  },
+  {
+    "id": "msg-003",
+    "source": "KAKAOTALK",
+    "sender": "동네 친구들 (단체방)",
+    "timestamp": "13:30",
+    "subject": null,
+    "content": "야 오늘 저녁에 삼겹살 먹으러 갈 사람? ㅋㅋㅋ / 난 오늘 야근이라 패스 ㅠㅠ / 그럼 내일 보든가~"
+  },
+  {
+    "id": "msg-004",
+    "source": "EMAIL",
+    "sender": "AWS Alerts <no-reply-aws@amazon.com>",
+    "timestamp": "13:35",
+    "subject": "[CRITICAL] AWS CloudWatch Alarm: Production API Server CPU > 95%",
+    "content": "You are receiving this notification because the metric 'CPUUtilization' on EC2 instance i-0a8b9c exceeded the threshold of 95.0% for 5 consecutive minutes. Action required: Inspect traffic spike or scale out auto-scaling group immediately."
+  },
+  {
+    "id": "msg-005",
+    "source": "SMS",
+    "sender": "010-XXXX-XXXX (스팸)",
+    "timestamp": "13:40",
+    "subject": null,
+    "content": "(광고) [대박투자] 이번 주 상한가 종목 단독 공개! 오늘만 무료 리딩방 입장 https://bit.ly/spam_invest 무료수신거부 080-888-0000"
+  },
+  {
+    "id": "msg-006",
+    "source": "EMAIL",
+    "sender": "박지영 변호사 <jypark@lawfirm.co.kr>",
+    "timestamp": "13:42",
+    "subject": "RE: 신규 서비스 이용약관 최종 검토본 송부 및 서명 요청의 건",
+    "content": "강식 대표님, 요청주신 개인정보 처리방침 및 서비스 약관 최종 수정안 첨부드립니다. 검토 후 별도 이견 없으시면 내일 오전 10시까지 날인본 회신 부탁드립니다."
+  },
+  {
+    "id": "msg-007",
+    "source": "SMS",
+    "sender": "쿠팡",
+    "timestamp": "13:45",
+    "subject": null,
+    "content": "[쿠팡] 주문하신 상품이 문 앞으로 배송 완료되었습니다. (로켓배송: 무소음 무선 마우스)"
+  },
+  {
+    "id": "msg-008",
+    "source": "KAKAOTALK",
+    "sender": "어머니",
+    "timestamp": "13:50",
+    "subject": null,
+    "content": "아들~ 이번 주말에 서울 올라가는데 토요일 점심에 시간 되니? 김치 담근 거 갖다주려고."
+  }
+]

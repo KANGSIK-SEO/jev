@@ -1,0 +1,17 @@
+steps:
+  # 1. Google Cloud Storage 정적 웹 호스팅 동기화 (오프라인/PWA 모바일 요약 앱)
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: ['-m', 'rsync', '-r', '.', 'gs://${PROJECT_ID}-jev-summarizer']
+  # 2. Google Cloud Run 서버리스 API 및 웹 대시보드 배포 (서울 리전 asia-northeast3)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'jev-summarizer'
+      - '--source=.'
+      - '--region=asia-northeast3'
+      - '--allow-unauthenticated'
+      - '--port=8000'
+options:
+  logging: CLOUD_LOGGING_ONLY

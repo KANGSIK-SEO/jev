@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#121620">
+<title>JEV (Just Essential View) | Wirelog 중요 문자·카톡·이메일 1줄 요약 비서 (Google Cloud & On-Device)</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-2: #21262d;
+  --border: #30363d;
+  --text: #f0f6fc;
+  --text-muted: #8b949e;
+  --primary: #2f81f7;
+  --primary-hover: #58a6ff;
+  --accent-urgent: #f85149;
+  --accent-warning: #d29922;
+  --accent-success: #2ea043;
+  --accent-purple: #bc8cff;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  padding-bottom: 90px;
+  min-height: 100vh;
+  user-select: none;
+}
+
+/* 상단 앱 헤더 */
+header.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(22, 27, 34, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-badge {
+  background: linear-gradient(135deg, #1f6feb, #8957e5);
+  color: #fff;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(31, 111, 235, 0.4);
+}
+
+.brand-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.offline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(46, 160, 67, 0.15);
+  color: #3fb950;
+  border: 1px solid rgba(46, 160, 67, 0.3);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3fb950;
+  box-shadow: 0 0 6px #3fb950;
+}
+
+/* 메인 컨테이너 */
+main.container {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 14px;
+}
+
+/* 통계 배너 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.stat-val {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.stat-val.red { color: var(--accent-urgent); }
+.stat-val.blue { color: var(--primary); }
+.stat-val.green { color: var(--accent-success); }
+
+.stat-lbl {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-weight: 500;
+}
+
+/* 탭 네비게이션 */
+.tab-pane {
+  display: none;
+}
+.tab-pane.active {
+  display: block;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 카드 */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.channel-selector {
+  display: flex;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 14px;
+}
+
+.channel-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.channel-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(47, 129, 247, 0.4);
+}
+
+.input-group {
+  margin-bottom: 12px;
+}
+
+.input-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+input[type="text"], textarea {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+input[type="text"]:focus, textarea:focus {
+  border-color: var(--primary);
+}
+
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  flex: 2;
+}
+.btn-primary:active {
+  transform: scale(0.98);
+  background: var(--primary-hover);
+}
+
+.btn-secondary {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  flex: 1;
+}
+.btn-secondary:active {
+  background: var(--border);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.file-dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+  background: rgba(22, 27, 34, 0.5);
+  cursor: pointer;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+.file-dropzone:hover {
+  border-color: var(--primary);
+  background: rgba(47, 129, 247, 0.05);
+}
+
+/* 필터 태그 */
+.filter-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+.filter-scroll::-webkit-scrollbar { display: none; }
+
+.filter-chip {
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.filter-chip.active {
+  background: var(--surface-2);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* 요약 카드 목록 */
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  position: relative;
+  transition: transform 0.15s, border-color 0.2s;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+
+.summary-card.urgent {
+  border-left: 5px solid var(--accent-urgent);
+}
+.summary-card.important {
+  border-left: 5px solid var(--accent-warning);
+}
+.summary-card.normal {
+  border-left: 5px solid var(--primary);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.card-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.badge-channel {
+  background: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+}
+.badge-urgent {
+  background: rgba(248, 81, 73, 0.18);
+  color: #ff7b72;
+}
+.badge-important {
+  background: rgba(210, 153, 34, 0.18);
+  color: #e3b341;
+}
+
+.card-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 핵심 1줄 요약 박스 */
+.one-liner {
+  background: linear-gradient(90deg, rgba(31, 111, 235, 0.15), rgba(137, 87, 229, 0.1));
+  border: 1px solid rgba(88, 166, 255, 0.35);
+  border-radius: 10px;
+  padding: 11px 13px;
+  margin: 8px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.one-liner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  fill: var(--primary-hover);
+}
+
+.action-required-box {
+  background: rgba(248, 81, 73, 0.12);
+  border: 1px dashed rgba(248, 81, 73, 0.5);
+  color: #ffa198;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.raw-snippet {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 8px;
+  border-radius: 6px;
+  margin-top: 8px;
+  word-break: break-all;
+  max-height: 54px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre-line;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(48, 54, 61, 0.5);
+  font-size: 11px;
+}
+
+.wirelog-trace {
+  font-family: var(--font-mono);
+  color: #7ee787;
+  font-size: 11px;
+}
+
+.card-btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+.sm-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.sm-btn:hover { color: #fff; border-color: var(--primary); }
+.sm-btn-proof {
+  background: rgba(137, 87, 229, 0.15);
+  border-color: rgba(137, 87, 229, 0.4);
+  color: #d2a8ff;
+}
+
+/* 하단 네비게이션 바 */
+nav.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(22, 27, 34, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  gap: 4px;
+  cursor: pointer;
+  flex: 1;
+  height: 100%;
+  transition: color 0.15s;
+}
+
+.nav-item.active {
+  color: var(--primary-hover);
+}
+
+.nav-item svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* Datalog 엔진 뷰 */
+.code-block {
+  background: #090d13;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #79c0ff;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 260px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+
+.datalog-keyword { color: #ff7b72; font-weight: bold; }
+.datalog-rel { color: #d2a8ff; }
+.datalog-str { color: #a5d6ff; }
+.datalog-comment { color: #8b949e; font-style: italic; }
+
+/* 모달: Datalog 추론 증명 트레이서 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-overlay.open {
+  display: flex;
+  animation: modalFade 0.2s ease-out;
+}
+@keyframes modalFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: var(--radius-lg);
+  max-width: 580px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+}
+
+.modal-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #d2a8ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.modal-body {
+  padding: 16px 18px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.trace-step {
+  margin-bottom: 14px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.trace-step-title {
+  font-weight: 700;
+  font-size: 12px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.trace-step-title.edb { color: #58a6ff; }
+.trace-step-title.rule { color: #ff7b72; }
+.trace-step-title.idb { color: #7ee787; }
+
+/* 토스트 알림 */
+#toast {
+  position: fixed;
+  bottom: 78px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: rgba(33, 38, 45, 0.96);
+  color: #fff;
+  border: 1px solid var(--primary);
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 2500;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+#toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+.empty-state svg {
+  width: 48px;
+  height: 48px;
+  fill: var(--text-muted);
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+</style>
+</head>
+<body>
+
+<!-- 상단 헤더 -->
+<header class="app-header">
+  <div class="brand-wrapper">
+    <span class="brand-badge">JEV × WIRELOG</span>
+    <span class="brand-title">오프라인 논리 추론 비서</span>
+  </div>
+  <div class="offline-pill" id="offlineIndicator">
+    <div class="pulse-dot"></div>
+    <span>100% 온디바이스 추론</span>
+  </div>
+</header>
+
+<main class="container">
+  <!-- 상단 요약 통계 -->
+  <section class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-val red" id="urgentCount">0</div>
+      <div class="stat-lbl">🚨 긴급/결재 추론</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val blue" id="importantCount">0</div>
+      <div class="stat-lbl">⭐ 중요 선별 팩트</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val green" id="filteredSpamCount">0</div>
+      <div class="stat-lbl">🛡️ Anti-join 차단</div>
+    </div>
+  </section>
+
+  <!-- [탭 1] 중요 요약 피드 (기본) -->
+  <section id="tabFeed" class="tab-pane active">
+    <!-- 필터 칩 -->
+    <div class="filter-scroll">
+      <div class="filter-chip active" data-filter="all" onclick="applyFeedFilter('all')">전체보기 (<span id="countAll">0</span>)</div>
+      <div class="filter-chip" data-filter="urgent" onclick="applyFeedFilter('urgent')">🚨 긴급 처리</div>
+      <div class="filter-chip" data-filter="sms" onclick="applyFeedFilter('sms')">📱 문자</div>
+      <div class="filter-chip" data-filter="kakao" onclick="applyFeedFilter('kakao')">💬 카카오톡</div>
+      <div class="filter-chip" data-filter="email" onclick="applyFeedFilter('email')">✉️ 이메일</div>
+    </div>
+
+    <!-- 1줄 요약 리스트 -->
+    <div class="summary-list" id="summaryContainer">
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>
+        <p>분석된 중요 메시지가 없습니다.<br>원클릭 실전 샘플을 불러오거나 직접 입력해보세요.</p>
+        <button class="btn btn-outline" style="margin-top:14px;" onclick="loadDemoDataset()">⚡ 샘플 데이터 불러오기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- [탭 2] 메시지 추가/입력 -->
+  <section id="tabInput" class="tab-pane">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+          메시지 입력 및 실시간 Datalog 추론
+        </span>
+        <button class="sm-btn" onclick="loadDemoDataset()">샘플 채우기</button>
+      </div>
+
+      <!-- 채널 선택 -->
+      <div class="channel-selector">
+        <button class="channel-btn active" id="btnChannelKakao" onclick="setChannel('kakao')">💬 카카오톡</button>
+        <button class="channel-btn" id="btnChannelSms" onclick="setChannel('sms')">📱 문자 (SMS)</button>
+        <button class="channel-btn" id="btnChannelEmail" onclick="setChannel('email')">✉️ 이메일</button>
+      </div>
+
+      <!-- 카카오톡 파일 업로드 드롭존 -->
+      <div class="file-dropzone" onclick="document.getElementById('fileUploadInput').click()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="#58a6ff" style="margin-bottom:4px;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+        <div style="font-size:13px; font-weight:600;">카카오톡 내보내기 텍스트 파일 (.txt) 불러오기</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">단톡방 대화 텍스트 파일을 올리면 각 발언을 Datalog 팩트로 즉시 분해 및 추론합니다</div>
+        <input type="file" id="fileUploadInput" accept=".txt,.csv" style="display:none;" onchange="handleFileUpload(event)">
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">발신자 / 채팅방 / 보낸이</label>
+        <input type="text" id="senderInput" placeholder="예: 김과장, 우리은행, 법무팀, 카카오 단톡방" value="김과장">
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">메시지 본문 내용</label>
+        <textarea id="bodyInput" placeholder="문자 메시지나 카카오톡 대화 내용, 이메일 본문을 붙여넣으세요..."></textarea>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn btn-primary" onclick="processManualInput()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          Wirelog Datalog 추론 실행
+        </button>
+        <button class="btn btn-secondary" onclick="clearInputForm()">지우기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- [탭 3] Wirelog Datalog 엔진 상태 & 규칙 관리 -->
+  <section id="tabEngine" class="tab-pane">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+          Wirelog 선언적 Datalog 규칙 체계
+        </span>
+        <span style="font-size:11px; color:#58a6ff; font-weight:700;">In-Memory Deductive Engine</span>
+      </div>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
+        단순 텍스트 출력이 아닌, 입력된 사실(EDB)과 선언적 호른절(Horn Clause) 규칙을 바탕으로 새로운 사실(IDB)을 연역적으로 증명하는 Wirelog Datalog 엔진 명세입니다.
+      </p>
+
+      <div class="input-label">실행 중인 Wirelog Datalog 프로그램 (.dl)</div>
+      <div class="code-block" id="datalogRulesView">
+<span class="datalog-comment">// 1. 베이스 릴레이션 정의 (Extensional DB)</span>
+<span class="datalog-keyword">.decl</span> <span class="datalog-rel">message</span>(id: symbol, ch: symbol, sender: symbol, body: symbol)
+<span class="datalog-keyword">.decl</span> <span class="datalog-rel">entity_token</span>(id: symbol, token: symbol, category: symbol, weight: number)
+<span class="datalog-keyword">.decl</span> <span class="datalog-rel">spam_token</span>(id: symbol, token: symbol)
+<span class="datalog-keyword">.decl</span> <span class="datalog-rel">temporal_constraint</span>(id: symbol, deadline: symbol)
+<span class="datalog-keyword">.decl</span> <span class="datalog-rel">action_required</span>(id: symbol, action_verb: symbol)
+
+<span class="datalog-comment">// 2. 차집합 연산: 스팸 및 광고 사실 추론 (Anti-join 배제용)</span>
+<span class="datalog-rel">is_spam</span>(Id) :- <span class="datalog-rel">spam_token</span>(Id, _).
+
+<span class="datalog-comment">// 3. 중요도/긴급도 복합 관계 조인 (Relational Join &amp; Scoring)</span>
+<span class="datalog-rel">urgent_fact</span>(Id, TotalScore) :- 
+    <span class="datalog-rel">message</span>(Id, _, _, _),
+    TotalScore = <span class="datalog-keyword">sum</span> W : { <span class="datalog-rel">entity_token</span>(Id, _, _, W) },
+    TotalScore >= 6.
+
+<span class="datalog-comment">// 4. 스팸 부정(Negation) 필터를 거친 정제 사실 연역</span>
+<span class="datalog-rel">curated_important</span>(Id, Priority) :-
+    <span class="datalog-rel">urgent_fact</span>(Id, Score),
+    <span class="datalog-keyword">!is_spam</span>(Id),
+    Priority = (Score >= 14 ? <span class="datalog-str">"urgent"</span> : <span class="datalog-str">"important"</span>).
+
+<span class="datalog-comment">// 5. 핵심 술어-목적어 트리플 결합에 의한 1줄 요약 사실 도출</span>
+<span class="datalog-rel">one_line_summary</span>(Id, Summary) :-
+    <span class="datalog-rel">curated_important</span>(Id, _),
+    <span class="datalog-rel">message</span>(Id, _, Sender, _),
+    <span class="datalog-rel">synthesize_predicate</span>(Id, Sender, Summary).
+      </div>
+
+      <div style="margin-top:14px; display:flex; gap:8px;">
+        <button class="btn btn-secondary" onclick="exportDataAsJson()">📥 전체 추론 결과 JSON 저장</button>
+        <button class="btn btn-secondary" onclick="clearAllData()">🗑️ 팩트베이스 초기화</button>
+      </div>
+    </div>
+
+    <!-- 앱 독립형 HTML 파일 다운로드 카드 -->
+    <div class="card" style="border: 1px solid #1f6feb; background: linear-gradient(180deg, #161b22, #0d1a2d);">
+      <div class="card-header">
+        <span class="card-title" style="color:#58a6ff;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+          오프라인 영구 소장용 HTML 다운로드
+        </span>
+      </div>
+      <p style="font-size:13px; color:var(--text); margin-bottom:12px;">
+        이 앱 전체(엔진 + UI + 데이터 처리)를 단일 <b>.html</b> 파일로 스마트폰이나 PC에 즉시 다운로드하세요. 인터넷이 없어도 브라우저로 열면 100% 동일하게 동작합니다.
+      </p>
+      <button class="btn btn-primary" style="width:100%;" onclick="downloadSelfHtml()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        단일 HTML 파일 다운로드 (.html)
+      </button>
+    </div>
+  </section>
+</main>
+
+<!-- 모달: Datalog 추론 증명 트레이서 (Proof Inspector) -->
+<div class="modal-overlay" id="proofModal" onclick="closeProofModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>
+        Wirelog Datalog 추론 증명 트레이스
+      </div>
+      <button class="modal-close" onclick="closeProofModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="proofModalBody">
+      <!-- 동적 생성 -->
+    </div>
+  </div>
+</div>
+
+<!-- 하단 탭 바 -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="navBtnFeed" onclick="switchTab('tabFeed')">
+    <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <span>중요 요약</span>
+  </button>
+  <button class="nav-item" id="navBtnInput" onclick="switchTab('tabInput')">
+    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    <span>메시지 추가</span>
+  </button>
+  <button class="nav-item" id="navBtnEngine" onclick="switchTab('tabEngine')">
+    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+    <span>Wirelog 엔진</span>
+  </button>
+</nav>
+
+<!-- 토스트 -->
+<div id="toast">알림</div>
+
+<script>
+/**
+ * Wirelog In-Memory Timely-Differential Datalog Engine
+ * Pure offline JavaScript port based on https://github.com/semantic-reasoning/wirelog
+ */
+class WirelogEngine {
+  constructor() {
+    this.facts = {
+      message: [],         // EDB: id, ch, sender, time, body
+      urgent_token: [],    // EDB: token, weight, category
+      spam_token: [],      // EDB: token, penalty
+      vip_sender: [],      // EDB: sender, weight
+    };
+    this.derived = {
+      urgent_msg: [],      // IDB
+      is_spam: [],         // IDB
+      important_curated: [],// IDB
+      one_line_summary: [] // IDB
+    };
+    this.proofs = {};      // Trace cache: msg_id -> { edb, firedRules, idb }
+    this.initDefaultRules();
+  }
+
+  initDefaultRules() {
+    const urgents = [
+      { tok: '긴급', weight: 10, cat: '긴급' },
+      { tok: '필독', weight: 9, cat: '중요' },
+      { tok: '오늘까지', weight: 9, cat: '기한' },
+      { tok: '내일까지', weight: 8, cat: '기한' },
+      { tok: '마감', weight: 8, cat: '기한' },
+      { tok: '회신 부탁', weight: 8, cat: '액션' },
+      { tok: '답장 부탁', weight: 8, cat: '액션' },
+      { tok: '확인 부탁', weight: 6, cat: '확인' },
+      { tok: '결재', weight: 9, cat: '결재' },
+      { tok: '승인', weight: 7, cat: '결재' },
+      { tok: '입금', weight: 8, cat: '금융' },
+      { tok: '송금', weight: 8, cat: '금융' },
+      { tok: '출금', weight: 8, cat: '금융' },
+      { tok: '결제', weight: 8, cat: '금융' },
+      { tok: '계약서', weight: 9, cat: '업무' },
+      { tok: '회의', weight: 6, cat: '일정' },
+      { tok: '미팅', weight: 6, cat: '일정' },
+      { tok: '약속', weight: 6, cat: '일정' },
+      { tok: '배송 완료', weight: 7, cat: '택배' },
+      { tok: '배송 예정', weight: 6, cat: '택배' },
+      { tok: '인증번호', weight: 10, cat: '인증' },
+      { tok: 'OTP', weight: 10, cat: '인증' },
+      { tok: '오류', weight: 9, cat: '장애' },
+      { tok: '장애', weight: 10, cat: '장애' },
+      { tok: '서명', weight: 8, cat: '업무' },
+      { tok: '제출', weight: 8, cat: '업무' }
+    ];
+    urgents.forEach(u => this.facts.urgent_token.push(u));
+
+    const spams = [
+      '광고', '(광고)', '[광고]', '무료수신거부', '무료거부', '080-', '대출안내',
+      '수신동의', '바카라', '카지노', '토토', '최저금리', 'VIP초대장', '이벤트 당첨'
+    ];
+    spams.forEach(s => this.facts.spam_token.push({ tok: s }));
+
+    const vips = ['대표이사', '사장님', '팀장님', '어머니', '아버지', '배우자', '가족', '인사팀', '회계팀'];
+    vips.forEach(v => this.facts.vip_sender.push({ sender: v, weight: 10 }));
+  }
+
+  // 팩트 투입 및 논리 추론 실행
+  insertMessage(msg) {
+    this.facts.message.push(msg);
+    return this.evaluateIncremental(msg);
+  }
+
+  // Timely-Differential Deductive Evaluation
+  evaluateIncremental(msg) {
+    const text = (msg.body + ' ' + msg.sender).toLowerCase();
+    const proof = {
+      id: msg.id,
+      edbFacts: [],
+      firedRules: [],
+      derivedFacts: []
+    };
+
+    // 1. EDB 사실 등록
+    proof.edbFacts.push(`message("${msg.id}", "${msg.channel}", "${msg.sender}", len=${msg.body.length})`);
+
+    // 2. Anti-join: Spam 검사 규칙
+    let isSpam = false;
+    let spamReason = '';
+    for (const s of this.facts.spam_token) {
+      if (text.includes(s.tok.toLowerCase())) {
+        isSpam = true;
+        spamReason = s.tok;
+        proof.edbFacts.push(`spam_token("${s.tok}")`);
+        proof.firedRules.push(`is_spam("${msg.id}") :- message("${msg.id}", _, _, B), contains(B, "${s.tok}").`);
+        proof.derivedFacts.push(`is_spam("${msg.id}", reason="${spamReason}")`);
+        break;
+      }
+    }
+
+    if (isSpam) {
+      this.derived.is_spam.push({ id: msg.id, reason: spamReason });
+      proof.derivedFacts.push(`DISCARDED: Anti-join (!is_spam) 조건 불만족으로 중요 피드에서 완전 탈락`);
+      this.proofs[msg.id] = proof;
+      return { isImportant: false, isSpam: true, reason: spamReason, proof };
+    }
+
+    // 3. Relational Join: VIP & 키워드 가중치 집계
+    let totalScore = 0;
+    const matchedTokens = [];
+    let detectedCategory = '일반';
+
+    for (const v of this.facts.vip_sender) {
+      if (msg.sender.includes(v.sender)) {
+        totalScore += v.weight;
+        matchedTokens.push('VIP 발신자: ' + v.sender);
+        detectedCategory = 'VIP';
+        proof.edbFacts.push(`vip_sender("${v.sender}", weight=${v.weight})`);
+        proof.firedRules.push(`vip_boost("${msg.id}", ${v.weight}) :- message("${msg.id}", _, "${v.sender}", _).`);
+      }
+    }
+
+    for (const u of this.facts.urgent_token) {
+      if (text.includes(u.tok.toLowerCase())) {
+        totalScore += u.weight;
+        matchedTokens.push(u.tok);
+        proof.edbFacts.push(`urgent_token("${u.tok}", weight=${u.weight}, cat="${u.cat}")`);
+        proof.firedRules.push(`token_match("${msg.id}", "${u.tok}", ${u.weight}) :- contains(body, "${u.tok}").`);
+        if (u.cat === '긴급' || u.cat === '인증') detectedCategory = u.cat;
+        else if (detectedCategory === '일반') detectedCategory = u.cat;
+      }
+    }
+
+    // 시간/금액/액션 엔티티 추론
+    const hasTime = /(\d{1,2}월\s*\d{1,2}일|\d{1,2}시\s*\d{1,2}분|오늘|내일|오전|오후)/.test(msg.body);
+    const hasMoney = /([0-9,]+원|[0-9,]+만원|\$\d+)/.test(msg.body);
+    const hasAction = /(해주세요|바랍니다|부탁드립니다|요망|제출|확인|승인)/.test(msg.body);
+
+    if (hasTime) {
+      totalScore += 3;
+      proof.edbFacts.push(`temporal_entity("${msg.id}", pattern="date_or_time")`);
+    }
+    if (hasMoney) {
+      totalScore += 4;
+      proof.edbFacts.push(`financial_entity("${msg.id}", pattern="currency_amount")`);
+    }
+    if (hasAction) {
+      totalScore += 3;
+      proof.edbFacts.push(`action_verb_entity("${msg.id}", pattern="request_verb")`);
+    }
+
+    const isImportant = totalScore >= 6;
+    let priority = 'normal';
+    if (totalScore >= 14 || detectedCategory === '긴급' || detectedCategory === '인증') {
+      priority = 'urgent';
+    } else if (totalScore >= 8) {
+      priority = 'important';
+    }
+
+    // 도출된 사실 기록
+    proof.firedRules.push(`curated_important("${msg.id}", "${priority}", score=${totalScore}) :- sum(weights) >= 6, !is_spam("${msg.id}").`);
+    proof.derivedFacts.push(`curated_important("${msg.id}", priority="${priority}", total_score=${totalScore})`);
+
+    // 1줄 요약 생성 (Datalog 관계 트리플 바인딩)
+    const summary = this.generateOneLineSummary(msg, {
+      category: detectedCategory,
+      priority,
+      hasTime,
+      hasMoney,
+      hasAction
+    });
+    proof.derivedFacts.push(`one_line_summary("${msg.id}", "${summary}")`);
+
+    // Action item 도출
+    const actionItem = this.extractActionItem(msg.body);
+    if (actionItem) {
+      proof.derivedFacts.push(`action_required("${msg.id}", task="${actionItem}")`);
+    }
+
+    this.proofs[msg.id] = proof;
+
+    const result = {
+      id: msg.id,
+      channel: msg.channel,
+      sender: msg.sender,
+      timestamp: msg.timestamp || new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+      body: msg.body,
+      isImportant,
+      isSpam: false,
+      priority,
+      score: totalScore,
+      category: detectedCategory,
+      reasons: matchedTokens,
+      summary,
+      actionItem,
+      proof
+    };
+
+    if (isImportant) {
+      this.derived.important_curated.unshift(result);
+    }
+    return result;
+  }
+
+  // 온디바이스 한국어 정밀 1줄 요약기 (Rule + Semantic Extractor)
+  generateOneLineSummary(msg, meta) {
+    const raw = msg.body.trim().replace(/\r\n/g, '\n');
+    const sender = msg.sender;
+
+    // 1. 인증번호 전용 초단축 요약
+    const authMatch = raw.match(/(?:인증번호|OTP|인증코드)[:\s]*([0-9]{4,8})/i) ||
+                      raw.match(/\[([0-9]{4,8})\]/);
+    if (authMatch) {
+      return `🔑 [인증번호] ${sender} 인증코드 [${authMatch[1]}] 도착`;
+    }
+
+    // 2. 금융/결제/이체 전용 요약
+    const moneyMatch = raw.match(/([0-9,]+원)/);
+    if (raw.includes('승인') || raw.includes('출금') || raw.includes('입금') || raw.includes('결제')) {
+      const type = raw.includes('승인') ? '카드 승인' :
+                   raw.includes('입금') ? '입금 확인' :
+                   raw.includes('출금') ? '출금 완료' : '결제 안내';
+      const amt = moneyMatch ? moneyMatch[1] : '금액 정보';
+      const cleanLine = raw.split('\n').find(l => l.includes('원') || l.includes('승인')) || raw;
+      return `💳 [${type}] ${sender} ${amt} (${cleanLine.slice(0, 32).trim()})`;
+    }
+
+    // 3. 택배 배송 전용 요약
+    if (raw.includes('배송') || raw.includes('택배')) {
+      const timeMatch = raw.match(/(\d{1,2}시~\d{1,2}시|\d{1,2}시경|오늘\s*도착)/);
+      const timeStr = timeMatch ? ` (${timeMatch[1]})` : '';
+      return `📦 [택배] ${sender} 배송 물품${timeStr} 배송 진행 중`;
+    }
+
+    // 4. 일반 메시지/카카오톡/이메일: 핵심 문장 스코어링 추출
+    const lines = raw.split(/\n+/).map(l => l.trim()).filter(l => l.length > 0);
+    
+    let bestLine = '';
+    let highestScore = -1;
+
+    for (const line of lines) {
+      if (/^(안녕하세요|수고하십니다|감사합니다|좋은 하루|반갑습니다)/.test(line) && line.length < 20) {
+        continue;
+      }
+      let score = 0;
+      if (/(까지|마감|부탁|요청|확인|회의|일정|제출|결재|송부|공유)/.test(line)) score += 5;
+      if (/(\d{1,2}월|\d{1,2}일|\d{1,2}시)/.test(line)) score += 3;
+      if (line.includes('?') || line.includes('요망')) score += 2;
+      
+      if (line.length >= 15 && line.length <= 60) score += 3;
+
+      if (score > highestScore) {
+        highestScore = score;
+        bestLine = line;
+      }
+    }
+
+    if (!bestLine) {
+      bestLine = lines[0] || raw;
+    }
+
+    bestLine = bestLine.replace(/[\r\n\t]+/g, ' ').trim();
+    if (bestLine.length > 55) {
+      bestLine = bestLine.slice(0, 52) + '...';
+    }
+
+    return `📌 [${sender}] ${bestLine}`;
+  }
+
+  // 할 일 / 대응 조치(Action Item) 감지
+  extractActionItem(body) {
+    if (/(오늘까지|내일까지|\d{1,2}시까지|마감).*(회신|제출|보내|처리|답장)/i.test(body)) {
+      const match = body.match(/(\S*까지)\s*(\S*)/);
+      return match ? `⚠️ 기한 내 조치: "${match[0]}" 필요` : '⚠️ 마감 기한 내 회신/제출 필요';
+    }
+    if (/회신 부탁|답장 부탁|피드백 부탁/i.test(body)) {
+      return '✉️ 회신/답변 작성 필요';
+    }
+    if (/결재 부탁|승인 부탁|서명 부탁/i.test(body)) {
+      return '📝 전자결재/서명 승인 대기 중';
+    }
+    if (/계좌|입금|송금/i.test(body) && /(바랍니다|요청)/i.test(body)) {
+      return '💰 송금/입금 확인 처리 필요';
+    }
+    if (/참석|회의|미팅|약속/i.test(body)) {
+      return '📅 캘린더 일정 등록 및 확인 권장';
+    }
+    return null;
+  }
+}
+
+// 싱글톤 엔진 인스턴스 생성
+const wirelog = new WirelogEngine();
+
+// UI 상태
+let currentChannel = 'kakao';
+let currentFilter = 'all';
+let allEvaluatedMessages = [];
+
+// 채널 선택 전환
+function setChannel(ch) {
+  currentChannel = ch;
+  document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
+  if (ch === 'kakao') document.getElementById('btnChannelKakao').classList.add('active');
+  if (ch === 'sms') document.getElementById('btnChannelSms').classList.add('active');
+  if (ch === 'email') document.getElementById('btnChannelEmail').classList.add('active');
+}
+
+// 탭 전환
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  
+  document.getElementById(tabId).classList.add('active');
+  
+  if (tabId === 'tabFeed') document.getElementById('navBtnFeed').classList.add('active');
+  if (tabId === 'tabInput') document.getElementById('navBtnInput').classList.add('active');
+  if (tabId === 'tabEngine') document.getElementById('navBtnEngine').classList.add('active');
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 수동 텍스트 입력 처리
+function processManualInput() {
+  const sender = document.getElementById('senderInput').value.trim() || '알 수 없음';
+  const body = document.getElementById('bodyInput').value.trim();
+
+  if (!body) {
+    showToast('메시지 내용을 입력해주세요.');
+    return;
+  }
+
+  // 카카오톡 내보내기 대화인 경우 멀티라인 자동 분할 파싱
+  if (currentChannel === 'kakao' && (body.includes('---------------') || body.match(/\[(.*?)\]\s*\[(.*?)\]/))) {
+    parseKakaoChatLog(body);
+    return;
+  }
+
+  const msg = {
+    id: 'msg_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+    channel: currentChannel,
+    sender: sender,
+    body: body,
+    timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+  };
+
+  const evalResult = wirelog.insertMessage(msg);
+  allEvaluatedMessages.unshift(evalResult);
+
+  updateDashboard();
+  renderFeed();
+  clearInputForm();
+  switchTab('tabFeed');
+
+  if (evalResult.isSpam) {
+    showToast('🛡️ 광고/스팸 팩트로 추론되어 Anti-join 배제되었습니다.');
+  } else if (evalResult.isImportant) {
+    showToast('✨ Wirelog: 중요 팩트 연역 추론 및 1줄 요약 완료!');
+  } else {
+    showToast('일반 팩트 (가중치 미달로 중요 필터 미포함)');
+  }
+}
+
+// 카카오톡 내보내기 텍스트 (.txt) 일괄 파싱 지원
+function parseKakaoChatLog(rawText) {
+  const lines = rawText.split('\n');
+  let parsedCount = 0;
+  let importantCount = 0;
+
+  const kakaoRegex = /\[(.*?)\]\s*\[(오전|오후)\s*(\d{1,2}:\d{1,2})\]\s*(.*)/;
+
+  lines.forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    const match = line.match(kakaoRegex);
+    if (match) {
+      const sender = match[1];
+      const time = match[2] + ' ' + match[3];
+      const text = match[4];
+
+      if (text.length > 2) {
+        const msg = {
+          id: 'kko_' + Date.now() + '_' + (++parsedCount),
+          channel: 'kakao',
+          sender: sender,
+          body: text,
+          timestamp: time
+        };
+        const res = wirelog.insertMessage(msg);
+        allEvaluatedMessages.unshift(res);
+        if (res.isImportant) importantCount++;
+      }
+    }
+  });
+
+  if (parsedCount === 0) {
+    const msg = {
+      id: 'kko_' + Date.now(),
+      channel: 'kakao',
+      sender: document.getElementById('senderInput').value.trim() || '카카오톡',
+      body: rawText,
+      timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    };
+    const res = wirelog.insertMessage(msg);
+    allEvaluatedMessages.unshift(res);
+    if (res.isImportant) importantCount++;
+  }
+
+  updateDashboard();
+  renderFeed();
+  clearInputForm();
+  switchTab('tabFeed');
+  showToast(`💬 카카오톡 ${parsedCount || 1}건 파싱 완료! (중요 ${importantCount}건 선별)`);
+}
+
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const text = event.target.result;
+    document.getElementById('bodyInput').value = text;
+    setChannel('kakao');
+    showToast(`📂 "${file.name}" 불러오기 완료! 분석 버튼을 누르세요.`);
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function clearInputForm() {
+  document.getElementById('bodyInput').value = '';
+}
+
+function applyFeedFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  const target = document.querySelector(`.filter-chip[data-filter="${filter}"]`);
+  if (target) target.classList.add('active');
+  renderFeed();
+}
+
+// 1줄 요약 피드 렌더링
+function renderFeed() {
+  const container = document.getElementById('summaryContainer');
+  let list = allEvaluatedMessages.filter(m => m.isImportant && !m.isSpam);
+
+  if (currentFilter === 'urgent') {
+    list = list.filter(m => m.priority === 'urgent');
+  } else if (currentFilter === 'sms') {
+    list = list.filter(m => m.channel === 'sms');
+  } else if (currentFilter === 'kakao') {
+    list = list.filter(m => m.channel === 'kakao');
+  } else if (currentFilter === 'email') {
+    list = list.filter(m => m.channel === 'email');
+  }
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>
+        <p>선택한 조건의 중요 메시지가 없습니다.</p>
+        <button class="btn btn-outline" style="margin-top:14px;" onclick="loadDemoDataset()">⚡ 샘플 데이터 불러오기</button>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  list.forEach(m => {
+    const channelName = m.channel === 'kakao' ? '💬 카톡' : m.channel === 'sms' ? '📱 문자' : '✉️ 메일';
+    const priBadge = m.priority === 'urgent' ? '<span class="badge badge-urgent">🚨 긴급/즉시</span>' :
+                     '<span class="badge badge-important">⭐ 중요</span>';
+
+    html += `
+    <div class="summary-card ${m.priority}">
+      <div class="card-top">
+        <div class="card-badge-row">
+          <span class="badge badge-channel">${channelName}</span>
+          ${priBadge}
+          <span style="font-size:12px; font-weight:700; color:#c9d1d9;">${escapeHtml(m.sender)}</span>
+        </div>
+        <div class="card-meta">${m.timestamp}</div>
+      </div>
+
+      <!-- 1줄 핵심 요약 -->
+      <div class="one-liner">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+        <div>${escapeHtml(m.summary)}</div>
+      </div>
+
+      ${m.actionItem ? `
+      <div class="action-required-box">
+        ${escapeHtml(m.actionItem)}
+      </div>` : ''}
+
+      <div class="raw-snippet">${escapeHtml(m.body)}</div>
+
+      <div class="card-footer">
+        <span class="wirelog-trace">Score: +${m.score} (${m.reasons.slice(0, 2).join(', ')})</span>
+        <div class="card-btn-group">
+          <button class="sm-btn sm-btn-proof" onclick="openProofModal('${m.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+            추론 증명
+          </button>
+          <button class="sm-btn" onclick="copySummary('${escapeJs(m.summary)}')">요약 복사</button>
+          <button class="sm-btn" onclick="deleteMessage('${m.id}')">완료</button>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+// Datalog 추론 증명 모달 열기
+function openProofModal(msgId) {
+  const proof = wirelog.proofs[msgId];
+  if (!proof) {
+    showToast('추론 트레이스 기록이 없습니다.');
+    return;
+  }
+
+  const modalBody = document.getElementById('proofModalBody');
+  let html = `
+    <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">
+      <b>ID:</b> <code style="color:#79c0ff">${proof.id}</code>에 대한 Wirelog Datalog 연역 추론 단계입니다.
+    </div>
+
+    <!-- 1단계: Extensional DB (투입된 기본 팩트) -->
+    <div class="trace-step">
+      <div class="trace-step-title edb">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+        1. EDB (Extensional Database: 투입된 원시 사실 튜플)
+      </div>
+      <div class="code-block" style="max-height:120px;">
+${proof.edbFacts.map(f => `<span class="datalog-rel">${escapeHtml(f)}</span>`).join('\n')}
+      </div>
+    </div>
+
+    <!-- 2단계: Fired Rules (점화된 Datalog 추론 규칙) -->
+    <div class="trace-step">
+      <div class="trace-step-title rule">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>
+        2. Fired Datalog Horn Rules (발화된 연역 규칙)
+      </div>
+      <div class="code-block" style="max-height:130px;">
+${proof.firedRules.map(r => `<span class="datalog-keyword">${escapeHtml(r)}</span>`).join('\n')}
+      </div>
+    </div>
+
+    <!-- 3단계: Intensional DB (새로 증명/도출된 사실) -->
+    <div class="trace-step">
+      <div class="trace-step-title idb">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        3. IDB (Intensional Database: 새롭게 도출 증명된 팩트)
+      </div>
+      <div class="code-block" style="max-height:140px;">
+${proof.derivedFacts.map(d => `<span style="color:#7ee787;">+ ${escapeHtml(d)}</span>`).join('\n')}
+      </div>
+    </div>
+  `;
+
+  modalBody.innerHTML = html;
+  document.getElementById('proofModal').classList.add('open');
+}
+
+function closeProofModal(e) {
+  if (e && e.target !== e.currentTarget && !e.target.classList.contains('modal-close')) return;
+  document.getElementById('proofModal').classList.remove('open');
+}
+
+// 대시보드 통계 업데이트
+function updateDashboard() {
+  const important = allEvaluatedMessages.filter(m => m.isImportant && !m.isSpam);
+  const urgent = important.filter(m => m.priority === 'urgent');
+  const spams = allEvaluatedMessages.filter(m => m.isSpam);
+
+  document.getElementById('urgentCount').textContent = urgent.length;
+  document.getElementById('importantCount').textContent = important.length;
+  document.getElementById('filteredSpamCount').textContent = spams.length;
+  document.getElementById('countAll').textContent = important.length;
+}
+
+function copySummary(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('📋 1줄 요약이 클립보드에 복사되었습니다.');
+  }).catch(() => {
+    showToast('복사 완료');
+  });
+}
+
+function deleteMessage(id) {
+  allEvaluatedMessages = allEvaluatedMessages.filter(m => m.id !== id);
+  updateDashboard();
+  renderFeed();
+  showToast('✅ 처리 완료되었습니다.');
+}
+
+// 샘플 테스트 데이터 자동 로드
+function loadDemoDataset() {
+  allEvaluatedMessages = [];
+  const demoData = [
+    {
+      id: 'fact_sms_01',
+      channel: 'sms',
+      sender: '국민은행',
+      body: '[국민은행] 10/29 15:42 9841***302 이체출금 450,000원 잔액 2,130,500원 (받는분: 김과장)',
+      timestamp: '15:42'
+    },
+    {
+      id: 'fact_sms_02',
+      channel: 'sms',
+      sender: 'CJ대한통운',
+      body: '[CJ대한통운 배송안내] 고객님의 상품이 오늘 16시~18시 사이에 배달 예정입니다. 기사연락처: 010-9876-5432',
+      timestamp: '14:20'
+    },
+    {
+      id: 'fact_sms_03',
+      channel: 'sms',
+      sender: '안심본인확인',
+      body: '[인증번호] 웹사이트 인증번호는 [849201] 입니다. 3분 이내에 정확히 입력해주세요. 타인노출금지.',
+      timestamp: '15:58'
+    },
+    {
+      id: 'fact_sms_04',
+      channel: 'sms',
+      sender: '(광고)대박대출',
+      body: '(광고) [대박론] 정부지원 저금리 대환 대출 오늘 마감! 최대 1억원. 무료수신거부 080-888-9999',
+      timestamp: '11:10'
+    },
+    {
+      id: 'fact_kko_05',
+      channel: 'kakao',
+      sender: '팀장님 (디자인팀)',
+      body: '강식님, 이번 4분기 프로젝트 디자인 최종 시안 오늘 오후 6시까지 검토 후 회신 부탁드립니다. 일정 마감이 촉박합니다!',
+      timestamp: '15:15'
+    },
+    {
+      id: 'fact_kko_06',
+      channel: 'kakao',
+      sender: '친구 모임방',
+      body: '오늘 저녁에 삼겹살 먹을 사람? 7시에 강남역 4번 출구에서 만나자ㅋㅋ',
+      timestamp: '13:00'
+    },
+    {
+      id: 'fact_kko_07',
+      channel: 'kakao',
+      sender: '어머니',
+      body: '아들 오늘 저녁 집에 들어올 때 마트에서 계란 한 판만 사다줘~ 바쁘면 말구',
+      timestamp: '14:50'
+    },
+    {
+      id: 'fact_mail_08',
+      channel: 'email',
+      sender: '경영지원팀 박수진',
+      body: '[결재요청/긴급] 11월 서버 증설 및 클라우드 라이선스 갱신 품의서 송부드립니다. 금일 중으로 승인 결재 부탁드립니다.',
+      timestamp: '13:45'
+    },
+    {
+      id: 'fact_mail_09',
+      channel: 'email',
+      sender: '뉴스레터 데일리',
+      body: '[뉴스레터] 오늘의 IT 동향 및 AI 최신 뉴스 10선. 읽어보시고 인사이트를 얻어가세요.',
+      timestamp: '09:00'
+    }
+  ];
+
+  demoData.forEach(msg => {
+    const res = wirelog.insertMessage(msg);
+    allEvaluatedMessages.push(res);
+  });
+
+  updateDashboard();
+  renderFeed();
+  showToast('⚡ 실전 팩트 9건 투입 및 Datalog 논리 연역 추론 완료!');
+}
+
+function exportDataAsJson() {
+  const jsonStr = JSON.stringify(allEvaluatedMessages, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `wirelog-datalog-inferences-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('💾 추론 JSON 파일이 저장되었습니다.');
+}
+
+function downloadSelfHtml() {
+  const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'wirelog-offline-summarizer.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('🎉 단일 HTML 파일 다운로드 완료! 모바일에서 바로 여세요.');
+}
+
+function clearAllData() {
+  if (confirm('모든 팩트와 추론 내역을 초기화하시겠습니까?')) {
+    allEvaluatedMessages = [];
+    wirelog.proofs = {};
+    updateDashboard();
+    renderFeed();
+    showToast('🗑️ 모든 팩트가 초기화되었습니다.');
+  }
+}
+
+function showToast(text) {
+  const toast = document.getElementById('toast');
+  toast.textContent = text;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function escapeJs(str) {
+  if (!str) return '';
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, ' ');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadDemoDataset();
+});
+</script>
+</body>
+</html>
