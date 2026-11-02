@@ -295,7 +295,6 @@ class MultiChannelAutoCrawler:
         collected.extend(self.crawl_macos_messages_db())
         collected.extend(self.crawl_apple_mail_emlx())
         collected.extend(self.crawl_imap_emails())
-        collected.extend(self.crawl_watched_kakao_files())
         if collected:
             self.recent_items = (collected + self.recent_items)[:100]
         self.stats["last_crawl_at"] = datetime.now().strftime("%H:%M:%S")
