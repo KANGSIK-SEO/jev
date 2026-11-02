@@ -27,6 +27,7 @@ from typing import List, Dict, Any, Optional
 class MultiChannelAutoCrawler:
     def __init__(self, watch_dirs: Optional[List[str]] = None):
         self.seen_ids = set()
+        self.recent_items: List[Dict[str, Any]] = []
         self.crawl_logs: List[Dict[str, Any]] = []
         self.watch_dirs = watch_dirs or [
             os.path.expanduser("~/Downloads"),
@@ -295,5 +296,7 @@ class MultiChannelAutoCrawler:
         collected.extend(self.crawl_apple_mail_emlx())
         collected.extend(self.crawl_imap_emails())
         collected.extend(self.crawl_watched_kakao_files())
+        if collected:
+            self.recent_items = (collected + self.recent_items)[:100]
         self.stats["last_crawl_at"] = datetime.now().strftime("%H:%M:%S")
-        return collected
+        return self.recent_items

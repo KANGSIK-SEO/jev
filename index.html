@@ -1928,7 +1928,12 @@ function senseSingleFromPool(silentToast = true) {
 
 async function syncWithBackendCrawler(showUserToast = false) {
   const inputEl = document.getElementById('backendApiUrlInput');
-  const baseUrl = (inputEl ? inputEl.value.trim() : 'http://localhost:8000').replace(/\/$/, '');
+  let defaultOrigin = 'http://localhost:8000';
+  if (window.location.port === '8000') {
+    defaultOrigin = window.location.origin;
+    if (inputEl && inputEl.value === 'http://localhost:8000') inputEl.value = defaultOrigin;
+  }
+  const baseUrl = (inputEl ? inputEl.value.trim() : defaultOrigin).replace(/\/$/, '');
   try {
     const resp = await fetch(`${baseUrl}/api/sensor/crawl`, { method: 'GET' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
