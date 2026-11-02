@@ -60,7 +60,7 @@ def trigger_auto_crawl():
             content=raw["content"],
         )
         current_messages.insert(0, msg)
-        triage = service.triage_message(msg)
+        triage = service._heuristic_fallback(msg)
         added_items.append({
             "raw": raw,
             "triage": triage.to_dict(),
@@ -96,7 +96,7 @@ def receive_mobile_webhook(req: NewMessageRequest):
         content=req.content,
     )
     current_messages.insert(0, msg)
-    triage = service.triage_message(msg)
+    triage = service._heuristic_fallback(msg)
     crawler.stats["total_sensed"] += 1
     return {"message": msg.to_dict(), "triage": triage.to_dict()}
 
