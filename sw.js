@@ -1,10 +1,11 @@
-const CACHE_NAME = 'jev-wirelog-v3';
+const CACHE_NAME = 'jev-wirelog-v4';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './jev_phone_qr.png'
 ];
 
 self.addEventListener('install', (e) => {
@@ -24,13 +25,19 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request)
-      .then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-        return res;
-      })
-      .catch(() => caches.match(e.request, { ignoreSearch: true }).then((c) => c || caches.match('./index.html')))
+    caches.match(e.request, { ignoreSearch: true }).then((cached) => {
+      const fetchPromise = fetch(e.request)
+        .then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return res;
+        })
+        .catch(() => cached || caches.match('./index.html'));
+      return cached || fetchPromise;
+    })
   );
 });
